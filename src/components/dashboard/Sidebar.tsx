@@ -2,17 +2,17 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Truck, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Truck, Settings, LogOut, Store } from 'lucide-react'
 import clsx from 'clsx'
 
 const navItems = [
-    { name: 'Overview', href: '/', icon: LayoutDashboard },
-    { name: 'Products', href: '/products', icon: ShoppingBag },
-    { name: 'Orders', href: '/orders', icon: Truck },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Overview', href: '/app', icon: LayoutDashboard },
+    { name: 'Products', href: '/app/products', icon: ShoppingBag },
+    { name: 'Orders', href: '/app/orders', icon: Truck },
+    { name: 'Settings', href: '/app/settings', icon: Settings },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ tenantSlug }: { tenantSlug?: string }) {
     const pathname = usePathname()
 
     return (
@@ -44,6 +44,18 @@ export default function Sidebar() {
                             </Link>
                         )
                     })}
+                    {/* View Shop Link */}
+                    {tenantSlug && (
+                        <a
+                            href={`https://${tenantSlug}.spikad.ai`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center rounded-lg px-2 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                        >
+                            <Store className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400" />
+                            View Shop
+                        </a>
+                    )}
                 </nav>
             </div>
 
