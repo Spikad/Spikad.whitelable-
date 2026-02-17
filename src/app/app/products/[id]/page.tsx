@@ -34,6 +34,10 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         const stock_quantity = parseInt(formData.get('stock_quantity') as string)
         const image_url = formData.get('image_url') as string
 
+        if (!profile?.tenant_id) {
+            throw new Error('Unauthorized')
+        }
+
         const { error } = await supabase
             .from('products')
             .update({
