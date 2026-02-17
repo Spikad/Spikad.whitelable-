@@ -1,4 +1,4 @@
-import { createTenant } from './actions'
+import { createTenant } from '@/actions/onboarding'
 import { Store, ArrowRight } from 'lucide-react'
 
 export default function OnboardingPage({
