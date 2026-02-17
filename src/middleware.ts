@@ -55,6 +55,13 @@ export default async function middleware(req: NextRequest) {
         hostname === 'localhost:3000' ||
         hostname === process.env.NEXT_PUBLIC_ROOT_DOMAIN
     ) {
+        // Allow access to /app (Dashboard) and /admin (Super Admin) on the root domain
+        if (url.pathname.startsWith('/app') || url.pathname.startsWith('/admin')) {
+            return NextResponse.rewrite(
+                new URL(`${path === '/' ? '' : path}`, req.url),
+            );
+        }
+
         return NextResponse.rewrite(
             new URL(`/home${path === '/' ? '' : path}`, req.url),
         );
