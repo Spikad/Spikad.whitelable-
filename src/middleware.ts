@@ -20,7 +20,8 @@ export default async function middleware(req: NextRequest) {
     // Get hostname (e.g. 'spikad.ai', 'app.spikad.ai', 'drivingschool.spikad.ai')
     let hostname = req.headers
         .get('host')!
-        .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`);
+        .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`)
+        .replace('www.', '') // Normalize www.spikad.ai -> spikad.ai
 
     // special case for Vercel preview URLs
     if (
