@@ -1,7 +1,11 @@
 import { createTenant } from './actions'
 import { Store, ArrowRight } from 'lucide-react'
 
-export default function OnboardingPage() {
+export default function OnboardingPage({
+    searchParams,
+}: {
+    searchParams: { error?: string }
+}) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4 text-white">
             <div className="w-full max-w-lg">
@@ -19,6 +23,12 @@ export default function OnboardingPage() {
                     <h1 className="mb-2 text-3xl font-bold">Name your store</h1>
                     <p className="text-white/60">This will be your unique address on Spikad.</p>
                 </div>
+
+                {searchParams?.error && (
+                    <div className="mb-6 rounded-lg bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400 text-center">
+                        {searchParams.error}
+                    </div>
+                )}
 
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm">
                     <form className="flex flex-col gap-6">

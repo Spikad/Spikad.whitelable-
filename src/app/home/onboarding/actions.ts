@@ -52,14 +52,7 @@ export async function createTenant(formData: FormData) {
     }
 
     // 4. Redirect to Dashboard
-    // We need to redirect to the APP subdomain.
-    // In local development, this is http://app.localhost:3000
-    // In production, it is https://app.spikad.ai
-
-    // We can construct the URL using the ROOT_DOMAIN env var
-    // In local development, we use http. In production (where rootDomain doesn't include localhost), we use https.
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000'
-    const protocol = rootDomain.includes('localhost') ? 'http' : 'https'
-
-    redirect(`${protocol}://app.${rootDomain}`)
+    // Since we are deploying on Vercel's root domain (and middleware allows /app),
+    // we should redirect to the /app path directly to avoid DNS issues with subdomains.
+    redirect('/app')
 }
