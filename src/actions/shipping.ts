@@ -13,7 +13,7 @@ export async function deleteShippingProfile(id: string) {
     return { message: 'Not implemented' }
 }
 
-export async function getShippingProfiles() {
+export async function getShippingProfiles(tenantId: string) {
     // Placeholder implementation
     return []
 }
