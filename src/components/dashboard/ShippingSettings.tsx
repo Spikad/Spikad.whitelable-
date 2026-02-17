@@ -57,7 +57,7 @@ export default function ShippingSettings({ profiles }: { profiles: ShippingProfi
 
                 {isAdding && (
                     <form action={async (formData) => {
-                        await createShippingProfile(formData)
+                        await createShippingProfile(null, formData)
                         setIsAdding(false)
                     }} className="bg-white p-4 rounded-md border border-gray-200 space-y-3">
                         <div>
