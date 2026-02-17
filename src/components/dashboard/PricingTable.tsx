@@ -1,9 +1,9 @@
 'use client'
 
 export default function PricingTable({
-    plans
+    currentStatus
 }: {
-    plans: any[]
+    currentStatus?: string
 }) {
     return (
         <div className="p-4 border rounded bg-gray-50">
