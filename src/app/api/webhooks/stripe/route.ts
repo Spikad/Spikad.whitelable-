@@ -16,16 +16,6 @@ export async function POST(req: Request) {
 
     let event: Stripe.Event
 
-    try {
-        if (!signature || !webhookSecret) {
-            return new NextResponse('Webhook secret or signature missing', { status: 400 })
-        }
-        event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } catch (err: any) {
-        console.error(`Webhook signature verification failed: ${err.message}`)
-        return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 })
-    }
-
     const supabaseAdmin = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -36,6 +26,33 @@ export async function POST(req: Request) {
             }
         }
     )
+
+    try {
+        if (!signature || !webhookSecret) {
+            await supabaseAdmin.from('webhook_logs').insert({
+                event_type: 'unknown',
+                status: 'error',
+                error_message: 'Missing secret or signature'
+            })
+            return new NextResponse('Webhook secret or signature missing', { status: 400 })
+        }
+        event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    } catch (err: any) {
+        console.error(`Webhook signature verification failed: ${err.message}`)
+        await supabaseAdmin.from('webhook_logs').insert({
+            event_type: 'unknown',
+            status: 'signature_error',
+            error_message: err.message
+        })
+        return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 })
+    }
+
+    // Log the raw event for debugging
+    await supabaseAdmin.from('webhook_logs').insert({
+        event_type: event.type,
+        payload: event as any,
+        status: 'received'
+    })
 
     try {
         switch (event.type) {
@@ -67,16 +84,42 @@ export async function POST(req: Request) {
 
                     if (error) {
                         console.error('Failed to update order status:', error)
+                        await supabaseAdmin.from('webhook_logs').insert({
+                            event_type: event.type,
+                            status: 'update_error',
+                            error_message: error.message,
+                            payload: { orderId, tenantId } as any
+                        })
                         throw error
                     }
+
+                    // Log success
+                    await supabaseAdmin.from('webhook_logs').insert({
+                        event_type: event.type,
+                        status: 'processed',
+                        payload: { orderId, tenantId, amountTotal } as any
+                    })
+                } else {
+                    await supabaseAdmin.from('webhook_logs').insert({
+                        event_type: event.type,
+                        status: 'skipped',
+                        error_message: 'Missing orderId or tenantId',
+                        payload: { orderId, tenantId, metadata: session.metadata } as any
+                    })
                 }
                 break
             }
             default:
                 console.log(`Unhandled event type ${event.type}`)
+            // Optional: Log unhandled events or filtered out
         }
     } catch (error: any) {
         console.error('Webhook handler failed:', error)
+        await supabaseAdmin.from('webhook_logs').insert({
+            event_type: event.type,
+            status: 'handler_failed',
+            error_message: error.message
+        })
         return new NextResponse('Webhook handler failed', { status: 500 })
     }
 
