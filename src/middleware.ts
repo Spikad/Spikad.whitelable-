@@ -17,6 +17,11 @@ export const config = {
 export default async function middleware(req: NextRequest) {
     const url = req.nextUrl;
 
+    // 0. Bypass for API routes (fail-safe)
+    if (url.pathname.startsWith('/api')) {
+        return NextResponse.next();
+    }
+
     // Get hostname (e.g. 'spikad.ai', 'app.spikad.ai', 'drivingschool.spikad.ai')
     let hostname = req.headers
         .get('host')!
