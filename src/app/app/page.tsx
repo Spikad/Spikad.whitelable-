@@ -1,104 +1,48 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ShoppingBag, Truck, DollarSign, ExternalLink } from 'lucide-react'
+import { ArrowRight, Package, DollarSign, ShoppingBag } from 'lucide-react'
+import DashboardCharts from '@/components/dashboard/DashboardCharts'
 
-export default async function DashboardOverview() {
+export default async function DashboardPage() {
     const supabase = await createClient()
+
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login')
 
-    if (!user) {
-        redirect('/login')
-    }
+    const { data: profile } = await supabase.from('profiles').select('*, tenants(*)').eq('id', user.id).single()
+    if (!profile?.tenants) redirect('/onboarding')
 
-    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
+    const tenant = profile.tenants
 
-    if (!profile?.tenant_id) {
-        redirect('/onboarding')
-    }
+    // Fetch Analytics Data (Parallel)
+    const today = new Date()
+    const thirtyDaysAgo = new Date(new Date().setDate(today.getDate() - 30))
 
-    const { data: tenant } = await supabase.from('tenants').select('*').eq('id', profile.tenant_id).single()
+    const [
+        { data: dailyRevenue },
+        { data: topProducts },
+        { count: ordersCount },
+        { count: productsCount }
+    ] = await Promise.all([
+        supabase.rpc('get_daily_revenue', {
+            p_tenant_id: tenant.id,
+            p_start_date: thirtyDaysAgo.toISOString(),
+            p_end_date: today.toISOString()
+        }),
+        supabase.rpc('get_top_products', { p_tenant_id: tenant.id }),
+        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id),
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id)
+    ])
 
-    // Fetch Stats
-    const { count: productCount } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenant.id)
-
-    const { count: orderCount } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', tenant.id)
+    // Calculate Total Revenue (Simple sum of the daily revenue)
+    const totalRevenue = dailyRevenue?.reduce((sum: number, item: any) => sum + (item.revenue || 0), 0) || 0
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-                <a
-                    href={`https://${tenant.slug}.spikad.ai`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-sm text-rose-600 hover:text-rose-700 font-medium"
-                >
-                    Visit Store <ExternalLink className="ml-1 h-4 w-4" />
-                </a>
-            </div>
+                </div >
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                {/* Products Card */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <ShoppingBag className="h-6 w-6 text-gray-400" />
-                            </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Total Products</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{productCount || 0}</div>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 px-5 py-3">
-                        <div className="text-sm">
-                            <Link href="/app/products" className="font-medium text-rose-600 hover:text-rose-500">
-                                View all
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Orders Card */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <Truck className="h-6 w-6 text-gray-400" />
-                            </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="text-sm font-medium text-gray-500 truncate">Total Orders</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{orderCount || 0}</div>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 px-5 py-3">
-                        <div className="text-sm">
-                            <Link href="/app/orders" className="font-medium text-rose-600 hover:text-rose-500">
-                                View all
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Revenue Card (Placeholder) */}
-                <div className="bg-white overflow-hidden shadow rounded-lg">
+        {/* Revenue Card (Placeholder) */ }
+        < div className = "bg-white overflow-hidden shadow rounded-lg" >
                     <div className="p-5">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
@@ -119,11 +63,11 @@ export default async function DashboardOverview() {
                             <span className="text-gray-500">Coming soon</span>
                         </div>
                     </div>
-                </div>
-            </div>
+                </div >
+            </div >
 
-            {/* Quick Actions / Recent Activity Placeholder */}
-            <div className="mt-8">
+        {/* Quick Actions / Recent Activity Placeholder */ }
+        < div className = "mt-8" >
                 <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <Link
@@ -141,7 +85,7 @@ export default async function DashboardOverview() {
                         <span className="mt-2 block text-sm font-medium text-gray-900">Configure Store Settings</span>
                     </Link>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
