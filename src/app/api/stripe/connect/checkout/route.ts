@@ -34,18 +34,20 @@ export async function POST(req: Request) {
         }
 
         // 2. Fetch Products & Calculate Trusted Context
-        const productIds = items.map((i: any) => i.id)
+        // Handle both 'id' (legacy/direct) and 'productId' (from CartContext)
+        const allProductIds = items.map((i: any) => i.productId || i.id)
+        const uniqueProductIds = Array.from(new Set(allProductIds))
 
         console.log('[Checkout] Verification Start:', {
             tenantId,
             itemCount: items.length,
-            productIds
+            uniqueIds: uniqueProductIds
         })
 
         const { data: products, error: productError } = await supabase
             .from('products')
             .select('*')
-            .in('id', productIds)
+            .in('id', uniqueProductIds)
             .eq('tenant_id', tenantId)
 
         if (productError) {
@@ -58,8 +60,14 @@ export async function POST(req: Request) {
             isActive: products?.map(p => p.is_active)
         })
 
-        if (!products || products.length !== items.length) {
-            console.warn('[Checkout] Mismatch detected. Returning 400.')
+        // Validate that EVERY item in the cart corresponds to a found product
+        const missingProducts = items.filter((item: any) => {
+            const pid = item.productId || item.id
+            return !products?.find(p => p.id === pid)
+        })
+
+        if (!products || missingProducts.length > 0) {
+            console.warn('[Checkout] Invalid products detected:', missingProducts)
             return new NextResponse('Invalid products in cart', { status: 400 })
         }
 
@@ -67,8 +75,9 @@ export async function POST(req: Request) {
         const line_items = []
 
         for (const itemRequest of items) {
-            const product = products.find(p => p.id === itemRequest.id)
-            if (!product) continue
+            const pid = itemRequest.productId || itemRequest.id
+            const product = products.find(p => p.id === pid)
+            if (!product) continue // Should be caught above, but safe guard
             if (!product.is_active) {
                 return new NextResponse(`Product ${product.title} is unavailable`, { status: 400 })
             }
