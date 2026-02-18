@@ -9,6 +9,18 @@ import SearchInput from '@/components/storefront/SearchInput'
 import CategoryFilter from '@/components/storefront/CategoryFilter'
 import SortSelect from '@/components/storefront/SortSelect'
 
+interface Product {
+    id: string
+    title: string
+    price: number
+    image_url: string | null
+    description: string | null
+    category: string | null
+    images: string[] | null
+    options: any | null
+    created_at: string
+}
+
 export default async function TenantPage({
     params,
     searchParams,
@@ -32,7 +44,7 @@ export default async function TenantPage({
     const supabase = await createClient()
 
     // Fetch Products via RPC
-    const { data: products, error } = await supabase
+    const { data } = await supabase
         .rpc('get_storefront_products', {
             p_tenant_id: tenant.id,
             p_search_query: q || null,
@@ -44,8 +56,10 @@ export default async function TenantPage({
             p_page_size: 100 // Fetch plenty for now
         })
 
-    if (error) {
-        console.error('Error fetching products:', error)
+    const products = data as Product[] | null
+
+    if (!products && data === null) {
+        // console.error('Error fetching products or no data returned')
     }
 
     // Fetch Unique Categories (for the filter)
