@@ -4,6 +4,7 @@ import { useCart } from '@/context/CartContext'
 import { X, Minus, Plus, ShoppingBag, Trash2, Truck } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 interface ShippingProfile {
     id: string
@@ -93,7 +94,7 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
         <div className="fixed inset-0 z-50 flex justify-end">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/50 transition-opacity"
+                className="fixed inset-0 bg-black/50 transition-opacity backdrop-blur-sm"
                 onClick={closeCart}
             />
 
@@ -106,7 +107,7 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                         <ShoppingBag className="w-5 h-5 mr-2" />
                         Your Cart
                     </h2>
-                    <button onClick={closeCart} className="p-2 hover:bg-gray-100 rounded-full">
+                    <button onClick={closeCart} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -120,37 +121,59 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                         </div>
                     ) : (
                         items.map((item) => (
-                            <div key={item.id} className="flex gap-4">
-                                <div className="h-20 w-20 bg-gray-100 rounded-md flex-shrink-0 overflow-hidden relative">
+                            <div key={item.cartItemId} className="flex gap-4 group">
+                                <div className="h-24 w-24 bg-gray-100 rounded-md flex-shrink-0 overflow-hidden relative border border-gray-100">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    {item.image_url && <img src={item.image_url} alt={item.title} className="object-cover w-full h-full" />}
+                                    {item.image_url ? (
+                                        <img src={item.image_url} alt={item.title} className="object-cover w-full h-full" />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full w-full text-gray-300">
+                                            <ShoppingBag className="w-6 h-6" />
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-medium text-gray-900">{item.title}</h3>
-                                    <p className="text-gray-500 text-sm">${item.price}</p>
+                                <div className="flex-1 flex flex-col justify-between py-1">
+                                    <div>
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="font-medium text-gray-900 line-clamp-1">{item.title}</h3>
+                                            <button
+                                                onClick={() => removeItem(item.cartItemId)}
+                                                className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
 
-                                    <div className="flex items-center mt-2 gap-3">
+                                        {/* Variant Display */}
+                                        {item.variants && (
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {Object.entries(item.variants).map(([key, val]) => (
+                                                    <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                                        {key}: {val}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <p className="text-gray-900 font-medium text-sm mt-1">${item.price}</p>
+                                    </div>
+
+                                    <div className="flex items-center justify-between mt-2">
                                         <div className="flex items-center border rounded-md">
                                             <button
-                                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                                className="p-1 hover:bg-gray-50"
+                                                onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
+                                                className="p-1 hover:bg-gray-50 text-gray-500"
                                             >
                                                 <Minus className="w-3 h-3" />
                                             </button>
-                                            <span className="px-2 text-sm">{item.quantity}</span>
+                                            <span className="px-3 text-sm font-medium w-8 text-center">{item.quantity}</span>
                                             <button
-                                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                                                className="p-1 hover:bg-gray-50"
+                                                onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
+                                                className="p-1 hover:bg-gray-50 text-gray-500"
                                             >
                                                 <Plus className="w-3 h-3" />
                                             </button>
                                         </div>
-                                        <button
-                                            onClick={() => removeItem(item.id)}
-                                            className="text-red-500 p-1 hover:bg-red-50 rounded"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -169,20 +192,23 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                                 </p>
                                 <div className="space-y-2">
                                     {shippingProfiles.map(profile => (
-                                        <label key={profile.id} className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-gray-50">
+                                        <label key={profile.id} className={cn(
+                                            "flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors",
+                                            selectedShippingId === profile.id ? "border-black bg-white ring-1 ring-black" : "border-gray-200 bg-white hover:bg-gray-50"
+                                        )}>
                                             <div className="flex items-center">
                                                 <input
                                                     type="radio"
                                                     name="shipping"
                                                     checked={selectedShippingId === profile.id}
                                                     onChange={() => setSelectedShippingId(profile.id)}
-                                                    className="mr-2"
+                                                    className="mr-3 h-4 w-4 text-black border-gray-300 focus:ring-black"
                                                 />
                                                 <span className="text-sm font-medium">{profile.name}</span>
                                             </div>
-                                            <span className="text-sm text-gray-500">
+                                            <span className="text-sm font-medium text-gray-900">
                                                 {profile.free_over_amount && cartTotal >= profile.free_over_amount
-                                                    ? <span className="text-green-600 font-bold">FREE</span>
+                                                    ? <span className="text-green-600">FREE</span>
                                                     : `$${profile.price}`
                                                 }
                                             </span>
@@ -192,13 +218,15 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                             </div>
                         )}
 
-                        <div className="flex justify-between mb-2 text-sm text-gray-500">
-                            <span>Subtotal</span>
-                            <span>${cartTotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between mb-4 font-semibold text-lg">
-                            <span>Total</span>
-                            <span>${finalTotal.toFixed(2)}</span>
+                        <div className="space-y-2 mb-4">
+                            <div className="flex justify-between text-sm text-gray-500">
+                                <span>Subtotal</span>
+                                <span>${cartTotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between font-bold text-lg text-gray-900">
+                                <span>Total</span>
+                                <span>${finalTotal.toFixed(2)}</span>
+                            </div>
                         </div>
 
                         <form onSubmit={handleCheckout} className="space-y-3">
@@ -206,19 +234,19 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                                 name="name"
                                 required
                                 placeholder="Full Name"
-                                className="w-full p-2 border rounded text-sm"
+                                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none transition-shadow"
                             />
                             <input
                                 name="email"
                                 type="email"
                                 required
                                 placeholder="Email Address"
-                                className="w-full p-2 border rounded text-sm"
+                                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black outline-none transition-shadow"
                             />
                             <button
                                 type="submit"
                                 disabled={isCheckingOut}
-                                className="w-full bg-black text-white py-3 rounded-lg font-medium hover:opacity-90 disabled:opacity-50 transition"
+                                className="w-full bg-black text-white py-3.5 rounded-lg font-bold hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-black/10"
                             >
                                 {isCheckingOut ? 'Processing...' : 'Checkout Now'}
                             </button>

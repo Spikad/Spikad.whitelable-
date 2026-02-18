@@ -5,31 +5,37 @@ import { useCart } from '@/context/CartContext'
 
 export default function AddToCartButton({
     product,
-    color
+    color,
+    selectedVariants,
+    disabled = false
 }: {
     product: any;
-    color: string
+    color: string;
+    selectedVariants?: Record<string, string>;
+    disabled?: boolean;
 }) {
     const { addItem } = useCart()
 
     const handleAddToCart = () => {
         addItem({
-            id: product.id,
+            productId: product.id,
             title: product.title,
             price: product.price,
             image_url: product.image_url,
-            tenant_id: product.tenant_id
+            tenant_id: product.tenant_id,
+            variants: selectedVariants
         })
     }
 
     return (
         <button
             onClick={handleAddToCart}
-            className="flex items-center justify-center rounded-lg px-4 py-2 font-bold text-white transition hover:opacity-90 active:scale-95"
+            disabled={disabled}
+            className="flex items-center justify-center rounded-lg px-6 py-3 font-bold text-white transition hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-md"
             style={{ backgroundColor: color || '#000' }}
         >
             <ShoppingBag className="mr-2 h-4 w-4" />
-            Add
+            Add to Cart
         </button>
     )
 }
