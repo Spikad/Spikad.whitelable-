@@ -134,7 +134,8 @@ export async function POST(req: Request) {
 
         if (orderError || !order) {
             console.error('Order creation failed:', orderError)
-            return new NextResponse(`Failed to initialize order: ${orderError.message}`, { status: 500 })
+            const errorMessage = orderError?.message || 'Unknown error'
+            return new NextResponse(`Failed to initialize order: ${errorMessage}`, { status: 500 })
         }
 
         // 5. Calculate Application Fee
