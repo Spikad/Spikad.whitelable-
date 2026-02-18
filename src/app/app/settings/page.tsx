@@ -38,6 +38,18 @@ export default async function SettingsPage() {
         const buttonRadius = formData.get('button_radius') as string
         const aboutPageContent = formData.get('about_page_content') as string
 
+        // 1. Verify Ownership
+        const { data: verifyTenant, error: verifyError } = await supabase
+            .from('tenants')
+            .select('id')
+            .eq('id', profile.tenant_id)
+            .single()
+
+        if (verifyError || !verifyTenant) {
+            console.error('[Settings] Verification failed', verifyError)
+            throw new Error('Unauthorized: Tenant verification failed')
+        }
+
         const { data: updatedTenant } = await supabase.from('tenants').update({
             name,
             primary_color: primaryColor,
