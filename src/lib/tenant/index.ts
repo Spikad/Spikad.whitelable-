@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { cache } from 'react'
 
-export const getTenant = cache(async (domain: string) => {
+export const getTenant = cache(async (rawDomain: string) => {
     const supabase = await createClient()
+    const domain = rawDomain.toLowerCase() // Enforce lowercase
 
-    // 1. Try matching custom_domain (e.g. store.com)
+    console.log('[getTenant] Lookup:', domain)
+
+    // 1. Exact Match (Custom Domain)
     const { data: customDomainTenant } = await supabase
         .from('tenants')
         .select('*')
@@ -13,53 +16,36 @@ export const getTenant = cache(async (domain: string) => {
 
     if (customDomainTenant) return customDomainTenant
 
-    // 2. If valid subdomain (e.g. store.spikad.ai), try matching slug
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN
-    console.log('[getTenant] Lookup:', { domain, rootDomain }) // DEBUG LOG
+    // 2. Subdomain Logic (Standard)
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN?.toLowerCase()
 
     if (rootDomain && domain.endsWith(`.${rootDomain}`)) {
-        const slug = domain.replace(`.${rootDomain}`, '').toLowerCase()
-        console.log('[getTenant] Extracted slug:', slug) // DEBUG LOG
-
-        const { data: slugTenant, error } = await supabase
+        const slug = domain.replace(`.${rootDomain}`, '').replace('www.', '')
+        const { data: slugTenant } = await supabase
             .from('tenants')
             .select('*')
             .eq('slug', slug)
             .single()
 
-        if (error) console.error('[getTenant] Error:', error) // DEBUG LOG
-        return slugTenant
+        if (slugTenant) return slugTenant
     }
 
-    // Fallback: Try matching slug directly (just in case env var is missing/wrong)
-    const { data: directSlugTenant } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('slug', domain)
-        .single()
+    // 3. Fallback: Split domain and try *every* part as a slug
+    // e.g. "www.skarpast.spikad.ai" -> ["www", "skarpast", "spikad", "ai"]
+    // We try to find a tenant with slug "skarpast"
+    const parts = domain.split('.')
+    for (const part of parts) {
+        if (part === 'www' || part === 'com' || part === 'ai' || part === 'spikad') continue; // Skip common noise
 
-    if (directSlugTenant) {
-        console.log('[getTenant] Matched direct slug:', domain)
-        return directSlugTenant
-    }
+        const { data: fallbackTenant } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('slug', part)
+            .single()
 
-    // Fallback 4: Hardcoded Safety Net for spikad.ai
-    // This catches cases where NEXT_PUBLIC_ROOT_DOMAIN is misconfigured
-    if (domain.includes('spikad.ai')) {
-        const parts = domain.split('.')
-        // If domain is "skarpast.spikad.ai", parts[0] is "skarpast"
-        // If domain is "www.skarpast.spikad.ai", parts[0] is "www" (less ideal but handles the main case)
-        if (parts.length >= 2) {
-            const fallbackSlug = parts[0].toLowerCase()
-            console.log('[getTenant] Hardcoded fallback slug:', fallbackSlug)
-
-            const { data: fallbackTenant } = await supabase
-                .from('tenants')
-                .select('*')
-                .eq('slug', fallbackSlug)
-                .single()
-
-            if (fallbackTenant) return fallbackTenant
+        if (fallbackTenant) {
+            console.log('[getTenant] Found via part-match:', part)
+            return fallbackTenant
         }
     }
 
