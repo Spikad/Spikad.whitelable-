@@ -21,6 +21,11 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
 
     // Filter items for this tenant only
     const tenantItems = useMemo(() => {
+        console.log('[CartDrawer] Filtering items:', {
+            totalItems: items.length,
+            currentTenantId: tenantId,
+            items: items.map(i => ({ id: i.productId, tenant_id: i.tenant_id }))
+        })
         return items.filter(item => item.tenant_id === tenantId)
     }, [items, tenantId])
 

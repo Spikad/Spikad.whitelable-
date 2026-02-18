@@ -17,6 +17,12 @@ export default function AddToCartButton({
     const { addItem } = useCart()
 
     const handleAddToCart = () => {
+        console.log('[AddToCart] Adding item:', {
+            productId: product.id,
+            title: product.title,
+            tenant_id: product.tenant_id,
+            variants: selectedVariants
+        })
         addItem({
             productId: product.id,
             title: product.title,

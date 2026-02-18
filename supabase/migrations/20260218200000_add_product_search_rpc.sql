@@ -1,4 +1,7 @@
 -- Create a function to filter and sort products efficiently
+-- Drop first to allow return type changes
+DROP FUNCTION IF EXISTS get_storefront_products(uuid, text, text, numeric, numeric, text, integer, integer);
+
 CREATE OR REPLACE FUNCTION get_storefront_products(
     p_tenant_id UUID,
     p_search_query TEXT DEFAULT NULL,
@@ -11,6 +14,7 @@ CREATE OR REPLACE FUNCTION get_storefront_products(
 )
 RETURNS TABLE (
     id UUID,
+    tenant_id UUID, -- Added tenant_id
     title TEXT,
     description TEXT,
     price NUMERIC,
@@ -54,6 +58,7 @@ BEGIN
     )
     SELECT 
         fp.id,
+        fp.tenant_id, -- Return tenant_id
         fp.title,
         fp.description,
         fp.price,

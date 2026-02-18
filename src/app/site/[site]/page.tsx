@@ -11,6 +11,7 @@ import SortSelect from '@/components/storefront/SortSelect'
 
 interface Product {
     id: string
+    tenant_id: string
     title: string
     price: number
     image_url: string | null
