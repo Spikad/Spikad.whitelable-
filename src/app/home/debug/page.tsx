@@ -71,6 +71,8 @@ export default async function DebugPage({
                             <th className="border p-2">Slug (Exact)</th>
                             <th className="border p-2">Slug Length</th>
                             <th className="border p-2">Custom Domain</th>
+                            <th className="border p-2">Stripe ID</th>
+                            <th className="border p-2">Charges Enabled</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -84,6 +86,14 @@ export default async function DebugPage({
                                 <td className="border p-2 bg-yellow-50">"{t.slug}"</td>
                                 <td className="border p-2">{t.slug.length}</td>
                                 <td className="border p-2">{t.custom_domain || '-'}</td>
+                                <td className="border p-2 font-mono text-xs">{t.stripe_connect_id || 'NULL'}</td>
+                                <td className="border p-2">
+                                    {t.charges_enabled ? (
+                                        <span className="bg-green-100 text-green-800 px-1 rounded">YES</span>
+                                    ) : (
+                                        <span className="bg-red-100 text-red-800 px-1 rounded">NO</span>
+                                    )}
+                                </td>
                             </tr>
                         ))}
                     </tbody>
