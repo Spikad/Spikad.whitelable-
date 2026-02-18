@@ -27,7 +27,9 @@ export default async function NewProductPage() {
         const stock_quantity = parseInt(formData.get('stock_quantity') as string)
         const image_url = formData.get('image_url') as string
 
-        const { error } = await supabase.from('products').insert({
+        console.log('Creating product...', { title, price, tenant_id: profile.tenant_id })
+
+        const { error, data } = await supabase.from('products').insert({
             tenant_id: profile.tenant_id,
             title,
             description,
@@ -35,11 +37,14 @@ export default async function NewProductPage() {
             stock_quantity,
             image_url,
             is_active: true
-        })
+        }).select()
 
         if (error) {
-            throw new Error('Failed to create product')
+            console.error('Failed to create product:', error)
+            throw new Error('Failed to create product: ' + error.message)
         }
+
+        console.log('Product created successfully:', data)
 
         revalidatePath('/app/products')
         redirect('/app/products')
