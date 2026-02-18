@@ -132,7 +132,8 @@ export async function POST(req: Request) {
                     display_name: 'Standard Shipping',
                 }
             })
-            allowedCountries.add('US');
+            allowedCountries.add('SE'); // Default to Sweden
+            allowedCountries.add('US'); // keep US as backup
         }
 
         // 5. Create Pending Order
