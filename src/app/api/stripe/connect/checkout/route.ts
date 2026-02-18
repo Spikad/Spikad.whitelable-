@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 // Force cast validity to avoid lint errors with mismatching local types
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
             return new NextResponse('Missing required fields', { status: 400 })
         }
 
-        const supabase = await createClient()
+        const supabase = await createServerClient()
 
         // 1. Get Tenant (and verify Connect Status - Fix #3)
         const { data: tenant } = await supabase
@@ -108,25 +109,32 @@ export async function POST(req: Request) {
         }
 
         // 4. Create Pending Order (Fix #2)
-        // We need a customer_id if logged in, or null? 
-        // The simplified schema has customer_id linked to profiles. 
-        // If guest checkout, maybe we store metadata in orders table?
-        // For now, we will create the order with minimal info.
-        const { data: order, error: orderError } = await supabase
+        // CRITICAL: Use Service Role to bypass RLS for order creation (Guest Checkout)
+        const supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+                auth: {
+                    autoRefreshToken: false,
+                    persistSession: false
+                }
+            }
+        )
+
+        const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
             .insert({
                 tenant_id: tenantId,
                 total_amount: itemsTotal + shippingCost,
                 status: 'pending',
                 items: items.map((i: any) => ({ ...i, price: products.find(p => p.id === i.id)?.price })), // Store snapshot
-                // For Guest: we might need to add customer_email/name columns to orders table if not strictly linked to profile
             })
             .select()
             .single()
 
         if (orderError || !order) {
             console.error('Order creation failed:', orderError)
-            return new NextResponse('Failed to initialize order', { status: 500 })
+            return new NextResponse(`Failed to initialize order: ${orderError.message}`, { status: 500 })
         }
 
         // 5. Calculate Application Fee
