@@ -26,6 +26,7 @@ export default async function SettingsPage() {
         'use server'
 
         const supabase = await createClient()
+
         const name = formData.get('name') as string
         const primaryColor = formData.get('primary_color') as string
         const secondaryColor = formData.get('secondary_color') as string
@@ -50,7 +51,8 @@ export default async function SettingsPage() {
             throw new Error('Unauthorized: Tenant verification failed')
         }
 
-        const { data: updatedTenant } = await supabase.from('tenants').update({
+        // 2. Update Tenant
+        const { data: updatedTenant, error: updateError } = await supabase.from('tenants').update({
             name,
             primary_color: primaryColor,
             secondary_color: secondaryColor,
@@ -67,22 +69,28 @@ export default async function SettingsPage() {
             .select('slug, custom_domain')
             .single()
 
+        if (updateError) {
+            console.error('[Settings] Update failed', updateError)
+            throw new Error(`Update failed: ${updateError.message}`)
+        }
+
         revalidatePath('/app/settings')
 
-        // Revalidate Storefront Paths
+        // 3. Revalidate Storefront Paths
         if (updatedTenant) {
-            // Revalidate the generic site path
-            revalidatePath(`/site/${updatedTenant.slug}`)
-            revalidatePath(`/site/${updatedTenant.slug}/about`)
-
-            // If custom domain exists
+            const paths = [
+                `/site/${updatedTenant.slug}`,
+                `/site/${updatedTenant.slug}/about`
+            ]
             if (updatedTenant.custom_domain) {
-                revalidatePath(`/site/${updatedTenant.custom_domain}`)
-                revalidatePath(`/site/${updatedTenant.custom_domain}/about`)
+                paths.push(`/site/${updatedTenant.custom_domain}`)
+                paths.push(`/site/${updatedTenant.custom_domain}/about`)
             }
 
-            // Also revalidate the root layout where variables are injected
-            revalidatePath(`/site/${updatedTenant.slug}`, 'layout')
+            for (const path of paths) {
+                revalidatePath(path)
+                revalidatePath(path, 'layout')
+            }
         }
     }
 
