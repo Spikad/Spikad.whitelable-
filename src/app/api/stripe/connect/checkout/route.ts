@@ -98,82 +98,151 @@ export async function POST(req: Request) {
                     price_data: {
                         currency: 'usd',
                         product_data: {
-                            name: `Shipping: ${profile.name}`,
-                        },
-                        unit_amount: Math.round(shippingCost * 100),
-                    },
-                    quantity: 1,
-                }
-                line_items.push(shippingLineItem)
-            }
-        }
-
-        // 4. Create Pending Order (Fix #2)
-        // CRITICAL: Use Service Role to bypass RLS for order creation (Guest Checkout)
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        )
+                            // 4. Create Pending Order (Fix #2)
+                            // CRITICAL: Use Service Role to bypass RLS for order creation (Guest Checkout)
+                            const supabaseAdmin = createClient(
+                                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                                process.env.SUPABASE_SERVICE_ROLE_KEY!,
+                                {
+                                    auth: {
+                                        autoRefreshToken: false,
+                                        persistSession: false
+                                    }
+                                }
+                            )
 
         const { data: order, error: orderError } = await supabaseAdmin
-            .from('orders')
-            .insert({
-                tenant_id: tenantId,
-                total_amount: itemsTotal + shippingCost,
-                status: 'pending',
-                items: items.map((i: any) => ({ ...i, price: products.find(p => p.id === i.id)?.price })), // Store snapshot
-            })
-            .select()
-            .single()
+                                .from('orders')
+                                .insert({
+                                    tenant_id: tenantId,
+                                    total_amount: itemsTotal, // Total amount will be updated after shipping is selected
+                                    status: 'pending',
+                                    items: items.map((i: any) => ({ ...i, price: products.find(p => p.id === i.id)?.price })), // Store snapshot
+                                })
+                                .select()
+                                .single()
 
-        if (orderError || !order) {
-            console.error('Order creation failed:', orderError)
-            const errorMessage = orderError?.message || 'Unknown error'
-            return new NextResponse(`Failed to initialize order: ${errorMessage}`, { status: 500 })
-        }
+        if(orderError || !order) {
+                    console.error('Order creation failed:', orderError)
+                    const errorMessage = orderError?.message || 'Unknown error'
+                    return new NextResponse(`Failed to initialize order: ${errorMessage}`, { status: 500 })
+                }
 
-        // 5. Calculate Application Fee
-        // Free: 5%, Growth: 3%, Pro: 1%
-        let feePercent = 0.05
-        if (tenant.plan_type === 'growth') feePercent = 0.03
-        if (tenant.plan_type === 'pro') feePercent = 0.01
+                // 5. Calculate Application Fee
+                // Free: 5%, Growth: 3%, Pro: 1%
+                let feePercent = 0.05
+                if (tenant.plan_type === 'growth') feePercent = 0.03
+                if (tenant.plan_type === 'pro') feePercent = 0.01
 
-        const totalAmountCents = Math.round((itemsTotal + shippingCost) * 100)
-        const applicationFee = Math.round(totalAmountCents * feePercent)
+                // 3. Calculate Shipping (Dynamic)
+                // Get customer country (default to US if not provided, though UI should ask)
+                // For now, Stripe Checkout collects address, but we need to set price BEFORE Stripe session?
+                // Actually, Stripe Checkout can collect address and we can subscribe to `checkout.session.completed`?
+                // BUT we need to charge the user the right amount upfront or use Shipping Options in Stripe.
+                // EASIEST MVP: Use Stripe's "shipping_options" to let user select? 
+                // OR: Calculate based on a pre-selected country in the cart?
+                // CURRENT FLOW: User clicks "Checkout" -> We create Session. We don't know address yet.
+                // STRATEGY: Enable `shipping_address_collection` in Stripe and pass `shipping_options`.
 
-        console.log(`[Checkout] Plan: ${tenant.plan_type}, Fee: ${feePercent * 100}%, Amount: ${applicationFee}`)
+                // Fetch Tenant's Shipping Rates
+                const { data: zones } = await supabaseAdmin
+                    .from('shipping_zones')
+                    .select('*, shipping_rates(*)')
+                    .eq('tenant_id', tenantId)
 
-        // 6. Create Stripe Session
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items,
-            mode: 'payment',
-            success_url: successUrl || `${req.headers.get('origin')}/success`,
-            cancel_url: cancelUrl || `${req.headers.get('origin')}/cancel`,
-            payment_intent_data: {
-                application_fee_amount: applicationFee,
-                transfer_data: {
-                    destination: tenant.stripe_connect_id,
-                },
-            },
-            customer_email: customerDetails.email,
-            metadata: {
-                tenantId,
-                orderId: order.id, // CRITICAL: Link Stripe Session to DB Order
-                customerName: customerDetails.name
+                // Transform into Stripe Shipping Options
+                // We will pass ALL applicable rates to Stripe, and Stripe will let user choose based on address? 
+                // Stripe's `shipping_options` is for fixed lists. 
+                // To do "real" dynamic shipping, we'd need to know address.
+                // MVP COMPROMISE: We will create a "shipping option" for each unique rate name/price across all zones?
+                // No, that's messy.
+                // BETTER: Use `allowed_countries`.
+
+                const stripeShippingOptions = []
+                const allowedCountries = new Set()
+
+                if (zones && zones.length > 0) {
+                    for (const zone of zones) {
+                        // Add countries to allowed list
+                        if (zone.countries) {
+                            zone.countries.forEach((c: string) => allowedCountries.add(c))
+                        }
+
+                        // Add rates (we have to map them to Stripe objects)
+                        // Issue: Stripe options are global for the session, they rely on 'shipping_rates' object in Stripe.
+                        // We'd need to create Stripe Shipping Rates objects on the fly?
+                        // OR: Just use `shipping_options` with ad-hoc values?
+                        // Stripe API allows `shipping_options` with `shipping_rate_data`.
+
+                        if (zone.shipping_rates) {
+                            for (const rate of zone.shipping_rates) {
+                                // Check min order price
+                                if (rate.min_order_price > 0 && itemsTotal < rate.min_order_price) continue;
+
+                                stripeShippingOptions.push({
+                                    shipping_rate_data: {
+                                        type: 'fixed_amount',
+                                        fixed_amount: {
+                                            amount: Math.round(rate.price * 100),
+                                            currency: 'usd', // currency should match tenant
+                                        },
+                                        display_name: `${rate.name} (${zone.name})`,
+                                        delivery_estimate: {
+                                            minimum: { unit: 'business_day', value: 3 },
+                                            maximum: { unit: 'business_day', value: 7 },
+                                        },
+                                    },
+                                })
+                            }
+                        }
+                    }
+                }
+
+                // Fallback if no rates defined? 
+                if (stripeShippingOptions.length === 0) {
+                    // Fallback to legacy $10 flat rate if no zones setup
+                    stripeShippingOptions.push({
+                        shipping_rate_data: {
+                            type: 'fixed_amount',
+                            fixed_amount: { amount: 1000, currency: 'usd' },
+                            display_name: 'Standard Shipping',
+                        }
+                    })
+                    allowedCountries.add('US'); // Default
+                }
+
+                // 6. Create Stripe Session
+                const session = await stripe.checkout.sessions.create({
+                    payment_method_types: ['card'],
+                    line_items: line_items,
+                    mode: 'payment',
+                    success_url: successUrl || `https://${tenant.custom_domain || tenant.slug + '.' + process.env.NEXT_PUBLIC_ROOT_DOMAIN}/success?session_id={CHECKOUT_SESSION_ID}`,
+                    cancel_url: cancelUrl || `https://${tenant.custom_domain || tenant.slug + '.' + process.env.NEXT_PUBLIC_ROOT_DOMAIN}/cart`,
+                    customer_email: customerDetails.email, // Pre-fill if logged in
+                    client_reference_id: order.id,
+                    shipping_address_collection: {
+                        allowed_countries: Array.from(allowedCountries) as any,
+                    },
+                    shipping_options: stripeShippingOptions, // <--- DYNAMIC RATES
+                    payment_intent_data: {
+                        application_fee_amount: Math.round(itemsTotal * 100 * feePercent), // Application fee based on itemsTotal initially
+                        transfer_data: {
+                            destination: tenant.stripe_connect_id,
+                        },
+                    },
+                    metadata: {
+                        tenant_id: tenantId,
+                        order_id: order.id,
+                        customerName: customerDetails.name
+                    },
+                }, {
+                    stripeAccount: tenant.stripe_connect_id, // Important (if using Connect)
+                })
+
+                return NextResponse.json({ url: session.url })
+
+            } catch (error: any) {
+                console.error('Stripe Connect Checkout error:', error)
+                return new NextResponse(`Checkout Error: ${error.message}`, { status: 500 })
             }
-        })
-
-        return NextResponse.json({ url: session.url })
-
-    } catch (error: any) {
-        console.error('Stripe Connect Checkout error:', error)
-        return new NextResponse(`Checkout Error: ${error.message}`, { status: 500 })
-    }
-}
+        }
