@@ -49,9 +49,25 @@ export default async function TenantPage({
 
             {/* Hero / Products Grid */}
             <main className="container mx-auto px-4 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to {tenant.name}</h1>
-                    <p className="text-gray-600">Browse our latest collection.</p>
+                <div className="mb-12 rounded-2xl overflow-hidden relative min-h-[400px] flex items-center justify-center text-center"
+                    style={{
+                        backgroundColor: tenant.hero_bg_color || '#000000',
+                        backgroundImage: tenant.hero_image_url ? `url(${tenant.hero_image_url})` : 'none',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                >
+                    {/* Overlay */}
+                    <div className="absolute inset-0 bg-black/40" />
+
+                    <div className="relative z-10 max-w-2xl px-6 py-12 text-white">
+                        <h1 className="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight drop-shadow-lg">
+                            {tenant.hero_title || `Welcome to ${tenant.name}`}
+                        </h1>
+                        <p className="text-lg md:text-xl text-gray-100 font-medium drop-shadow-md">
+                            {tenant.hero_subtitle || 'Browse our latest collection.'}
+                        </p>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
