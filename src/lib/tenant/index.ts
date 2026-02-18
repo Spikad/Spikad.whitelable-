@@ -1,13 +1,30 @@
 import { createClient } from '@/lib/supabase/server'
 import { cache } from 'react'
 
-export const getTenant = cache(async (slug: string) => {
+export const getTenant = cache(async (domain: string) => {
     const supabase = await createClient()
-    const { data: tenant } = await supabase
+
+    // 1. Try matching custom_domain (e.g. store.com)
+    const { data: customDomainTenant } = await supabase
         .from('tenants')
         .select('*')
-        .eq('slug', slug)
+        .eq('custom_domain', domain)
         .single()
 
-    return tenant
+    if (customDomainTenant) return customDomainTenant
+
+    // 2. If valid subdomain (e.g. store.spikad.ai), try matching slug
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN
+    if (rootDomain && domain.endsWith(`.${rootDomain}`)) {
+        const slug = domain.replace(`.${rootDomain}`, '')
+        const { data: slugTenant } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('slug', slug)
+            .single()
+
+        return slugTenant
+    }
+
+    return null
 })
