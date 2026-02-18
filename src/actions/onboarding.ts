@@ -51,8 +51,7 @@ export async function createTenant(formData: FormData) {
         redirect('/onboarding?error=Could not link account to store')
     }
 
-    // 4. Redirect to Dashboard
-    // Since we are deploying on Vercel's root domain (and middleware allows /app),
-    // we should redirect to the /app path directly to avoid DNS issues with subdomains.
-    redirect('/app')
+    // 4. Redirect to Plan Selection
+    // Instead of going straight to /app, we now ask them to pick a plan.
+    redirect('/onboarding/plans')
 }
