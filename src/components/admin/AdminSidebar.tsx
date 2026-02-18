@@ -53,7 +53,14 @@ export default function AdminSidebar() {
                 </nav>
             </div>
 
-            <div className="border-t border-zinc-800 pt-4">
+            <div className="border-t border-zinc-800 pt-4 space-y-2">
+                <Link
+                    href="/app"
+                    className="flex w-full items-center rounded-lg px-2 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+                >
+                    <LayoutDashboard className="mr-3 h-5 w-5 text-zinc-500" />
+                    Back to App
+                </Link>
                 <button className="flex w-full items-center rounded-lg px-2 py-2 text-sm font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors">
                     <LogOut className="mr-3 h-5 w-5 text-zinc-500" />
                     Sign Out
