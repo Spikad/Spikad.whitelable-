@@ -1,33 +1,61 @@
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
-
-// ... existing imports ...
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 // Initialize Stripe
-// ...
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2025-01-27.acacia' as any,
+    typescript: true,
+})
 
 export async function POST(req: Request) {
     try {
         const supabase = await createClient()
 
-        // ... verify user ...
+        // 1. Authenticate User
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return new NextResponse('Unauthorized', { status: 401 })
+        }
+
+        // 2. Get Tenant
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('tenant_id')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile?.tenant_id) {
+            return new NextResponse('No tenant found', { status: 400 })
+        }
+
+        const { data: tenant } = await supabase
+            .from('tenants')
+            .select('*')
+            .eq('id', profile.tenant_id)
+            .single()
+
+        if (!tenant) {
+            return new NextResponse('Tenant not found', { status: 404 })
+        }
 
         // 3. Create or Retrieve Connect Account
         let accountId = tenant.stripe_connect_id
 
         if (!accountId) {
             const account = await stripe.accounts.create({
-                // ... account params ...
                 type: 'express',
-                country: 'SE',
+                country: 'SE', // Defaulting to Sweden as per context, or make dynamic
                 email: user.email,
                 capabilities: {
                     card_payments: { requested: true },
                     transfers: { requested: true },
                 },
-                business_type: 'individual',
+                business_type: 'individual', // Default, can be 'company'
                 business_profile: {
-                    url: `https://${tenant.slug}.spikad.ai`,
+                    url: `https://${tenant.slug}.spikad.ai`, // Or custom domain
                     name: tenant.name,
                 }
             })
