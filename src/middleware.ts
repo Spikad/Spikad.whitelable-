@@ -23,6 +23,12 @@ export default async function middleware(req: NextRequest) {
         .replace('.localhost:3000', `.${process.env.NEXT_PUBLIC_ROOT_DOMAIN}`)
         .replace('www.', '') // Normalize www.spikad.ai -> spikad.ai
 
+    console.log('[Middleware] Request:', {
+        originalHost: req.headers.get('host'),
+        resolvedHostname: hostname,
+        pathname: url.pathname
+    }) // DEBUG LOG
+
     // special case for Vercel preview URLs
     if (
         hostname.includes('---') &&
@@ -70,5 +76,6 @@ export default async function middleware(req: NextRequest) {
 
     // 3. Custom Domain / Subdomain (e.g. drivingschool.spikad.ai) -> Redirect to /_site/[domain]
     // This allows us to serve the dynamic [domain] page
+    console.log('[Middleware] Rewriting to:', `/_site/${hostname}${path}`) // DEBUG LOG
     return NextResponse.rewrite(new URL(`/_site/${hostname}${path}`, req.url));
 }
