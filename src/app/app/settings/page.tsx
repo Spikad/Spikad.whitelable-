@@ -30,12 +30,26 @@ export default async function SettingsPage() {
         const primaryColor = formData.get('primary_color') as string
         const secondaryColor = formData.get('secondary_color') as string
         const logoUrl = formData.get('logo_url') as string
+        const heroTitle = formData.get('hero_title') as string
+        const heroSubtitle = formData.get('hero_subtitle') as string
+        const heroImageUrl = formData.get('hero_image_url') as string
+        const heroBgColor = formData.get('hero_bg_color') as string
+        const fontFamily = formData.get('font_family') as string
+        const buttonRadius = formData.get('button_radius') as string
+        const aboutPageContent = formData.get('about_page_content') as string
 
         await supabase.from('tenants').update({
             name,
             primary_color: primaryColor,
             secondary_color: secondaryColor,
             logo_url: logoUrl,
+            hero_title: heroTitle,
+            hero_subtitle: heroSubtitle,
+            hero_image_url: heroImageUrl,
+            hero_bg_color: heroBgColor,
+            font_family: fontFamily,
+            button_radius: buttonRadius,
+            about_page_content: aboutPageContent,
         }).eq('id', profile.tenant_id)
 
         revalidatePath('/app/settings')

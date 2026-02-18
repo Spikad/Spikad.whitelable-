@@ -15,6 +15,13 @@ interface SettingsFormProps {
         subscription_status: string | null
         stripe_connect_id?: string | null
         charges_enabled?: boolean | null
+        hero_title?: string | null
+        hero_subtitle?: string | null
+        hero_image_url?: string | null
+        hero_bg_color?: string | null
+        font_family?: string | null
+        button_radius?: string | null
+        about_page_content?: string | null
     }
     updateAction: (formData: FormData) => Promise<void>
 }
@@ -47,10 +54,11 @@ export default function SettingsForm({ tenant, updateAction }: SettingsFormProps
         <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
             <div className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-8 divide-y divide-gray-200">
+
+                    {/* 1. General Info */}
                     <div className="space-y-8 divide-y divide-gray-200">
                         <div>
                             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-
                                 <div className="sm:col-span-6">
                                     <h3 className="text-lg font-medium leading-6 text-gray-900">General Information</h3>
                                     <p className="mt-1 text-sm text-gray-500">
@@ -70,9 +78,7 @@ export default function SettingsForm({ tenant, updateAction }: SettingsFormProps
                                 </div>
 
                                 <div className="sm:col-span-4">
-                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                        Store Name
-                                    </label>
+                                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">Store Name</label>
                                     <div className="mt-1">
                                         <input
                                             type="text"
@@ -84,42 +90,157 @@ export default function SettingsForm({ tenant, updateAction }: SettingsFormProps
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                <div className="sm:col-span-3">
-                                    <label htmlFor="primary_color" className="block text-sm font-medium text-gray-700">
-                                        Primary Brand Color
-                                    </label>
-                                    <div className="mt-1 flex items-center">
-                                        <input
-                                            type="color"
-                                            name="primary_color"
-                                            id="primary_color"
-                                            defaultValue={tenant.primary_color}
-                                            className="h-9 w-14 rounded-md border border-gray-300 p-1 bg-white"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-500">{tenant.primary_color}</span>
-                                    </div>
+                    {/* 2. Visual Theme Editor */}
+                    <div className="pt-8">
+                        <div>
+                            <h3 className="text-lg font-medium leading-6 text-gray-900">Visual Theme</h3>
+                            <p className="mt-1 text-sm text-gray-500">Customize the look and feel of your store.</p>
+                        </div>
+                        <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+                            <div className="sm:col-span-3">
+                                <label htmlFor="primary_color" className="block text-sm font-medium text-gray-700">Primary Color</label>
+                                <div className="mt-1 flex items-center">
+                                    <input
+                                        type="color"
+                                        name="primary_color"
+                                        id="primary_color"
+                                        defaultValue={tenant.primary_color}
+                                        className="h-9 w-14 rounded-md border border-gray-300 p-1 bg-white"
+                                    />
                                 </div>
+                            </div>
 
-                                <div className="sm:col-span-3">
-                                    <label htmlFor="secondary_color" className="block text-sm font-medium text-gray-700">
-                                        Secondary Brand Color
-                                    </label>
-                                    <div className="mt-1 flex items-center">
-                                        <input
-                                            type="color"
-                                            name="secondary_color"
-                                            id="secondary_color"
-                                            defaultValue={tenant.secondary_color}
-                                            className="h-9 w-14 rounded-md border border-gray-300 p-1 bg-white"
-                                        />
-                                        <span className="ml-2 text-sm text-gray-500">{tenant.secondary_color}</span>
-                                    </div>
+                            <div className="sm:col-span-3">
+                                <label htmlFor="secondary_color" className="block text-sm font-medium text-gray-700">Secondary Color</label>
+                                <div className="mt-1 flex items-center">
+                                    <input
+                                        type="color"
+                                        name="secondary_color"
+                                        id="secondary_color"
+                                        defaultValue={tenant.secondary_color}
+                                        className="h-9 w-14 rounded-md border border-gray-300 p-1 bg-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="sm:col-span-3">
+                                <label htmlFor="font_family" className="block text-sm font-medium text-gray-700">Font Family</label>
+                                <select
+                                    id="font_family"
+                                    name="font_family"
+                                    defaultValue={tenant.font_family || 'Inter'}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-2 border"
+                                >
+                                    <option value="Inter">Modern (Inter)</option>
+                                    <option value="Playfair Display">Luxury (Playfair)</option>
+                                    <option value="Montserrat">Bold (Montserrat)</option>
+                                    <option value="Lato">Friendly (Lato)</option>
+                                </select>
+                            </div>
+
+                            <div className="sm:col-span-3">
+                                <label htmlFor="button_radius" className="block text-sm font-medium text-gray-700">Button Style</label>
+                                <select
+                                    id="button_radius"
+                                    name="button_radius"
+                                    defaultValue={tenant.button_radius || 'rounded-md'}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-2 border"
+                                >
+                                    <option value="rounded-none">Sharp (Square)</option>
+                                    <option value="rounded-md">Soft (Rounded)</option>
+                                    <option value="rounded-full">Playful (Pill)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 3. Hero Section Editor */}
+                    <div className="pt-8">
+                        <div>
+                            <h3 className="text-lg font-medium leading-6 text-gray-900">Hero Section</h3>
+                            <p className="mt-1 text-sm text-gray-500">The first thing customers see on your home page.</p>
+                        </div>
+                        <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+
+                            <div className="sm:col-span-6">
+                                <label className="block text-sm font-medium text-gray-700">Hero Image</label>
+                                <div className="mt-1">
+                                    <ImageUploader
+                                        onUploadComplete={(url) => {
+                                            const input = document.getElementById('hero_image_url_input') as HTMLInputElement
+                                            if (input) input.value = url
+                                        }}
+                                        defaultValue={tenant.hero_image_url || ''}
+                                        path="banners"
+                                    />
+                                    <input type="hidden" name="hero_image_url" id="hero_image_url_input" defaultValue={tenant.hero_image_url || ''} />
+                                </div>
+                            </div>
+
+                            <div className="sm:col-span-4">
+                                <label htmlFor="hero_title" className="block text-sm font-medium text-gray-700">Headline</label>
+                                <input
+                                    type="text"
+                                    name="hero_title"
+                                    id="hero_title"
+                                    defaultValue={tenant.hero_title || `Welcome to ${tenant.name}`}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-2 border"
+                                />
+                            </div>
+
+                            <div className="sm:col-span-4">
+                                <label htmlFor="hero_subtitle" className="block text-sm font-medium text-gray-700">Subtitle</label>
+                                <input
+                                    type="text"
+                                    name="hero_subtitle"
+                                    id="hero_subtitle"
+                                    defaultValue={tenant.hero_subtitle || 'Browse our latest collection.'}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-2 border"
+                                />
+                            </div>
+
+                            <div className="sm:col-span-2">
+                                <label htmlFor="hero_bg_color" className="block text-sm font-medium text-gray-700">Background Color</label>
+                                <div className="mt-1 flex items-center">
+                                    <input
+                                        type="color"
+                                        name="hero_bg_color"
+                                        id="hero_bg_color"
+                                        defaultValue={tenant.hero_bg_color || '#000000'}
+                                        className="h-9 w-14 rounded-md border border-gray-300 p-1 bg-white"
+                                    />
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    {/* 4. About Page */}
+                    <div className="pt-8">
+                        <div>
+                            <h3 className="text-lg font-medium leading-6 text-gray-900">About Page</h3>
+                            <p className="mt-1 text-sm text-gray-500">Tell your story.</p>
+                        </div>
+                        <div className="mt-6">
+                            <label htmlFor="about_page_content" className="block text-sm font-medium text-gray-700">Content</label>
+                            <div className="mt-1">
+                                <textarea
+                                    id="about_page_content"
+                                    name="about_page_content"
+                                    rows={6}
+                                    defaultValue={tenant.about_page_content || ''}
+                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-rose-500 focus:ring-rose-500 sm:text-sm p-2 border"
+                                    placeholder="Write your brand story here..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 5. Payments & Subscription (Existing Code) */}
                     <div className="pt-8">
                         <h2 className="text-lg font-medium text-gray-900 mb-4">Payouts & Payments</h2>
                         <div className="bg-gray-50 rounded-lg p-6">
