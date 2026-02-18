@@ -12,7 +12,13 @@ export default async function TenantPage({
     params: Promise<{ site: string }>
 }) {
     const { site } = await params
-    const tenant = await getTenant(site)
+    console.log('[TenantPage] Loading for site:', site) // DEBUG LOG
+
+    // Decode if needed (just in case)
+    const decodedSite = decodeURIComponent(site)
+    const tenant = await getTenant(decodedSite)
+
+    console.log('[TenantPage] Found tenant:', tenant ? tenant.slug : 'null') // DEBUG LOG
 
     if (!tenant) return notFound()
 
