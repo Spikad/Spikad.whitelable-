@@ -1,21 +1,62 @@
 import { createClient } from '@/lib/supabase/server'
+import { getTenant } from '@/lib/tenant'
 
-export default async function DebugPage() {
+export default async function DebugPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+    const resolvedParams = await searchParams
+    const domainToTest = typeof resolvedParams.test === 'string' ? resolvedParams.test : null
+
     const supabase = await createClient()
 
     // 1. Fetch all tenants
     const { data: tenants, error } = await supabase.from('tenants').select('*')
 
-    // 2. Fetch Debug Info
+    // 2. Test getTenant if requested
+    let testResult = null
+    if (domainToTest) {
+        console.log('[DebugPage] Testing domain:', domainToTest)
+        try {
+            testResult = await getTenant(domainToTest)
+        } catch (e: any) {
+            testResult = { error: e.message }
+        }
+    }
+
+    // 3. Fetch Debug Info
     const envRoot = process.env.NEXT_PUBLIC_ROOT_DOMAIN
 
     return (
-        <div className="p-8 font-mono text-sm">
+        <div className="p-8 font-mono text-sm max-w-4xl mx-auto">
             <h1 className="text-xl font-bold mb-4">Debug Console 🐞</h1>
 
-            <div className="mb-8 p-4 bg-gray-100 rounded">
-                <h2 className="font-bold">Environment</h2>
-                <p>NEXT_PUBLIC_ROOT_DOMAIN: <strong>{envRoot}</strong></p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div className="p-4 bg-gray-100 rounded">
+                    <h2 className="font-bold">Environment</h2>
+                    <p>NEXT_PUBLIC_ROOT_DOMAIN: <strong>{envRoot}</strong></p>
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                    <h2 className="font-bold mb-2">Test Tenant Lookup</h2>
+                    <form className="flex gap-2">
+                        <input
+                            name="test"
+                            defaultValue={domainToTest || ''}
+                            placeholder="e.g. skarpast.spikad.ai"
+                            className="flex-1 p-1 border rounded"
+                        />
+                        <button type="submit" className="bg-blue-600 text-white px-3 py-1 rounded">Check</button>
+                    </form>
+                    {domainToTest && (
+                        <div className="mt-2 text-xs">
+                            <p><strong>Testing:</strong> {domainToTest}</p>
+                            <p><strong>Result:</strong> {testResult ? '✅ Found' : '❌ Not Found (Returns Null)'}</p>
+                            {testResult && <pre className="mt-1 bg-white p-1 rounded overflow-x-auto">{JSON.stringify(testResult, null, 2)}</pre>}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="mb-8">
@@ -49,8 +90,8 @@ export default async function DebugPage() {
                 </table>
             </div>
 
-            <p className="text-gray-500">
-                Visit <a href={`https://skarpast.${envRoot}`} className="text-blue-600 underline">https://skarpast.{envRoot}</a> to test.
+            <p className="text-gray-500 text-xs">
+                To access this page: Visit <code>{envRoot}/debug</code> or <code>www.{envRoot}/debug</code>
             </p>
         </div>
     )
