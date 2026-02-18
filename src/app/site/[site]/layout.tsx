@@ -17,6 +17,8 @@ export default async function SiteLayout({
         notFound()
     }
 
+    const isCustomDomain = !site.endsWith(process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'spikad.ai')
+
     return (
         <div
             className="min-h-screen font-sans antialiased"
@@ -26,7 +28,11 @@ export default async function SiteLayout({
                 '--secondary': tenant.secondary_color || '#000000',
             }}
         >
-            <SubscriptionGate status={tenant.subscription_status}>
+            <SubscriptionGate
+                status={tenant.subscription_status}
+                planType={tenant.plan_type}
+                isCustomDomain={isCustomDomain}
+            >
                 <StorefrontLayoutWrapper tenantId={tenant.id}>
                     {children}
                 </StorefrontLayoutWrapper>
