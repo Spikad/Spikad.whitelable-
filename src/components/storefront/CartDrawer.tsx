@@ -2,7 +2,7 @@
 
 import { useCart } from '@/context/CartContext'
 import { X, Minus, Plus, ShoppingBag, Trash2, Truck } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
@@ -14,10 +14,20 @@ interface ShippingProfile {
 }
 
 export default function CartDrawer({ tenantId }: { tenantId: string }) {
-    const { items, removeItem, updateQuantity, cartTotal, isCartOpen, closeCart, clearCart } = useCart()
+    const { items, removeItem, updateQuantity, isCartOpen, closeCart } = useCart()
     const [isCheckingOut, setIsCheckingOut] = useState(false)
     const [shippingProfiles, setShippingProfiles] = useState<ShippingProfile[]>([])
     const [selectedShippingId, setSelectedShippingId] = useState<string | null>(null)
+
+    // Filter items for this tenant only
+    const tenantItems = useMemo(() => {
+        return items.filter(item => item.tenant_id === tenantId)
+    }, [items, tenantId])
+
+    // Calculate total for this tenant
+    const cartTotal = useMemo(() => {
+        return tenantItems.reduce((total, item) => total + item.price * item.quantity, 0)
+    }, [tenantItems])
 
     // Fetch shipping profiles when cart opens
     useEffect(() => {
@@ -64,7 +74,7 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    items,
+                    items: tenantItems, // Only send items for this tenant
                     tenantId,
                     customerDetails: { name, email },
                     successUrl: window.location.origin + '/success',
@@ -114,13 +124,13 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
 
                 {/* Items */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {items.length === 0 ? (
+                    {tenantItems.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-gray-400">
                             <ShoppingBag className="w-12 h-12 mb-2 opacity-20" />
                             <p>Your cart is empty.</p>
                         </div>
                     ) : (
-                        items.map((item) => (
+                        tenantItems.map((item) => (
                             <div key={item.cartItemId} className="flex gap-4 group">
                                 <div className="h-24 w-24 bg-gray-100 rounded-md flex-shrink-0 overflow-hidden relative border border-gray-100">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -182,7 +192,7 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                 </div>
 
                 {/* Footer / Checkout */}
-                {items.length > 0 && (
+                {tenantItems.length > 0 && (
                     <div className="border-t p-4 bg-gray-50">
                         {/* Shipping Selection */}
                         {shippingProfiles.length > 0 && (
