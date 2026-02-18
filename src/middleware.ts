@@ -74,8 +74,8 @@ export default async function middleware(req: NextRequest) {
         );
     }
 
-    // 3. Custom Domain / Subdomain (e.g. drivingschool.spikad.ai) -> Redirect to /_site/[domain]
+    // 3. Custom Domain / Subdomain (e.g. drivingschool.spikad.ai) -> Redirect to /site/[domain]
     // This allows us to serve the dynamic [domain] page
-    console.log('[Middleware] Rewriting to:', `/_site/${hostname}${path}`) // DEBUG LOG
-    return NextResponse.rewrite(new URL(`/_site/${hostname}${path}`, req.url));
+    console.log('[Middleware] Rewriting to:', `/site/${hostname}${path}`) // DEBUG LOG
+    return NextResponse.rewrite(new URL(`/site/${hostname}${path}`, req.url));
 }
