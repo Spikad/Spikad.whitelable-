@@ -29,7 +29,7 @@ export default async function AboutPage({
                         <Link href="/about" className="text-sm font-medium text-gray-700 hover:text-gray-900">
                             About
                         </Link>
-                        <CartTrigger primaryColor={tenant.primary_color} />
+                        <CartTrigger primaryColor={tenant.primary_color} tenantId={tenant.id} />
                     </div>
                 </div>
             </header>
