@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -34,7 +35,14 @@ export async function GET(req: Request) {
         const account = await stripe.accounts.retrieve(tenant.stripe_connect_id)
 
         // 3. Update DB based on 'charges_enabled'
-        await supabase
+        // Use Admin Client to bypass RLS
+        const adminClient = createAdminClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { auth: { autoRefreshToken: false, persistSession: false } }
+        )
+
+        await adminClient
             .from('tenants')
             .update({
                 charges_enabled: account.charges_enabled,
