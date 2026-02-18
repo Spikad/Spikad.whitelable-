@@ -33,6 +33,21 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         const price = parseFloat(formData.get('price') as string)
         const stock_quantity = parseInt(formData.get('stock_quantity') as string)
         const image_url = formData.get('image_url') as string
+        const category = formData.get('category') as string
+
+        let images = []
+        try {
+            images = JSON.parse(formData.get('images') as string || '[]')
+        } catch (e) {
+            console.error('Failed to parse images', e)
+        }
+
+        let options = []
+        try {
+            options = JSON.parse(formData.get('options') as string || '[]')
+        } catch (e) {
+            console.error('Failed to parse options', e)
+        }
 
         if (!profile?.tenant_id) {
             throw new Error('Unauthorized')
@@ -46,6 +61,9 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
                 price,
                 stock_quantity,
                 image_url,
+                images,
+                category,
+                options
             })
             .eq('id', id)
             .eq('tenant_id', profile.tenant_id) // Extra safety
