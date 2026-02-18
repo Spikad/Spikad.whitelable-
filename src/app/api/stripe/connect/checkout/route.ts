@@ -174,9 +174,6 @@ export async function POST(req: Request) {
             shipping_options: stripeShippingOptions as any,
             payment_intent_data: {
                 application_fee_amount: Math.round(itemsTotal * 100 * feePercent),
-                transfer_data: {
-                    destination: tenant.stripe_connect_id,
-                },
             },
             metadata: {
                 tenant_id: tenantId,
