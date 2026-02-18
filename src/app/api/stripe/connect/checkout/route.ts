@@ -21,7 +21,7 @@ export async function POST(req: Request) {
         // 1. Get Tenant (and verify Connect Status - Fix #3)
         const { data: tenant } = await supabase
             .from('tenants')
-            .select('stripe_connect_id, charges_enabled, name')
+            .select('stripe_connect_id, charges_enabled, name, plan_type')
             .eq('id', tenantId)
             .single()
 
@@ -130,9 +130,15 @@ export async function POST(req: Request) {
         }
 
         // 5. Calculate Application Fee
-        const PLATFORM_FEE_PERCENT = 0.05
+        // Free: 5%, Growth: 3%, Pro: 1%
+        let feePercent = 0.05
+        if (tenant.plan_type === 'growth') feePercent = 0.03
+        if (tenant.plan_type === 'pro') feePercent = 0.01
+
         const totalAmountCents = Math.round((itemsTotal + shippingCost) * 100)
-        const applicationFee = Math.round(totalAmountCents * PLATFORM_FEE_PERCENT)
+        const applicationFee = Math.round(totalAmountCents * feePercent)
+
+        console.log(`[Checkout] Plan: ${tenant.plan_type}, Fee: ${feePercent * 100}%, Amount: ${applicationFee}`)
 
         // 6. Create Stripe Session
         const session = await stripe.checkout.sessions.create({
