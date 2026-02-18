@@ -35,13 +35,31 @@ export async function POST(req: Request) {
 
         // 2. Fetch Products & Calculate Trusted Context
         const productIds = items.map((i: any) => i.id)
-        const { data: products } = await supabase
+
+        console.log('[Checkout] Verification Start:', {
+            tenantId,
+            itemCount: items.length,
+            productIds
+        })
+
+        const { data: products, error: productError } = await supabase
             .from('products')
             .select('*')
             .in('id', productIds)
             .eq('tenant_id', tenantId)
 
+        if (productError) {
+            console.error('[Checkout] Product Fetch Error:', productError)
+        }
+
+        console.log('[Checkout] Products Found:', {
+            count: products?.length,
+            foundIds: products?.map(p => p.id),
+            isActive: products?.map(p => p.is_active)
+        })
+
         if (!products || products.length !== items.length) {
+            console.warn('[Checkout] Mismatch detected. Returning 400.')
             return new NextResponse('Invalid products in cart', { status: 400 })
         }
 
