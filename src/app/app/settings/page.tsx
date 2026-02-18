@@ -38,7 +38,7 @@ export default async function SettingsPage() {
         const buttonRadius = formData.get('button_radius') as string
         const aboutPageContent = formData.get('about_page_content') as string
 
-        await supabase.from('tenants').update({
+        const { data: updatedTenant } = await supabase.from('tenants').update({
             name,
             primary_color: primaryColor,
             secondary_color: secondaryColor,
@@ -50,9 +50,28 @@ export default async function SettingsPage() {
             font_family: fontFamily,
             button_radius: buttonRadius,
             about_page_content: aboutPageContent,
-        }).eq('id', profile.tenant_id)
+        })
+            .eq('id', profile.tenant_id)
+            .select('slug, custom_domain')
+            .single()
 
         revalidatePath('/app/settings')
+
+        // Revalidate Storefront Paths
+        if (updatedTenant) {
+            // Revalidate the generic site path
+            revalidatePath(`/site/${updatedTenant.slug}`)
+            revalidatePath(`/site/${updatedTenant.slug}/about`)
+
+            // If custom domain exists
+            if (updatedTenant.custom_domain) {
+                revalidatePath(`/site/${updatedTenant.custom_domain}`)
+                revalidatePath(`/site/${updatedTenant.custom_domain}/about`)
+            }
+
+            // Also revalidate the root layout where variables are injected
+            revalidatePath(`/site/${updatedTenant.slug}`, 'layout')
+        }
     }
 
     const shippingProfiles = await getShippingProfiles(tenant.id)

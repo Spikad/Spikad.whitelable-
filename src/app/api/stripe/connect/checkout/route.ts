@@ -163,8 +163,8 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ url: session.url })
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Stripe Connect Checkout error:', error)
-        return new NextResponse('Internal Error', { status: 500 })
+        return new NextResponse(`Checkout Error: ${error.message}`, { status: 500 })
     }
 }

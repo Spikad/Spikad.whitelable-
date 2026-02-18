@@ -82,9 +82,9 @@ export default function CartDrawer({ tenantId }: { tenantId: string }) {
                 window.location.href = data.url
             }
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            alert('Checkout failed. Please try again.')
+            alert(`Checkout failed: ${error.message}`)
             setIsCheckingOut(false)
         }
     }
