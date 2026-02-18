@@ -16,7 +16,7 @@ export default async function AppLayout({
         redirect('/login')
     }
 
-    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
+    const { data: profile } = await supabase.from('profiles').select('tenant_id, role').eq('id', user.id).single()
 
     if (!profile?.tenant_id) {
         redirect('/onboarding')
@@ -26,7 +26,7 @@ export default async function AppLayout({
 
     return (
         <div className="flex h-screen bg-gray-50">
-            <Sidebar tenantSlug={tenant?.slug} />
+            <Sidebar tenantSlug={tenant?.slug} userRole={profile.role} />
             <div className="flex flex-1 flex-col overflow-hidden">
                 <Header />
                 <DashboardSubscriptionGate status={tenant?.subscription_status || null}>
