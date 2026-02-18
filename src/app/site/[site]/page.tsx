@@ -80,7 +80,7 @@ export default async function TenantPage({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {products?.map((product) => (
                         <div key={product.id} className="group bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition">
-                            <Link href={`/${site}/product/${product.id}`} className="block">
+                            <Link href={`/product/${product.id}`} className="block">
                                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                                     {product.image_url ? (
                                         <img
@@ -96,7 +96,7 @@ export default async function TenantPage({
                                 </div>
                             </Link>
                             <div className="p-4">
-                                <Link href={`/${site}/product/${product.id}`} className="block">
+                                <Link href={`/product/${product.id}`} className="block">
                                     <h3 className="font-medium text-gray-900 mb-1 group-hover:text-gray-600 transition-colors">{product.title}</h3>
                                 </Link>
                                 <p className="text-sm text-gray-500 line-clamp-2 mb-3">{product.description}</p>

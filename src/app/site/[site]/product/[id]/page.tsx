@@ -63,7 +63,7 @@ export default async function ProductPage({
                 style={{ borderTop: `4px solid ${tenant.primary_color}` }}
             >
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href={`/${site}`} className="flex items-center gap-2 text-xl font-bold text-gray-900">
+                    <Link href="/" className="flex items-center gap-2 text-xl font-bold text-gray-900">
                         {tenant.logo_url ? (
                             <img
                                 src={tenant.logo_url}
@@ -83,7 +83,7 @@ export default async function ProductPage({
             <main className="container mx-auto px-4 py-8">
                 {/* Breadcrumb / Back */}
                 <div className="mb-6">
-                    <Link href={`/${site}`} className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors">
+                    <Link href="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors">
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Back to store
                     </Link>

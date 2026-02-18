@@ -22,7 +22,7 @@ export default function RelatedProducts({ products, siteId }: { products: Produc
                 {products.map((product) => (
                     <Link
                         key={product.id}
-                        href={`/${siteId}/product/${product.id}`}
+                        href={`/product/${product.id}`}
                         className="group block"
                     >
                         <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden mb-4 relative border border-gray-100">
