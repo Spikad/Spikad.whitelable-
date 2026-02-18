@@ -124,6 +124,64 @@ export default function ShippingZoneForm({ tenantId, initialData }: { tenantId: 
                 <p className="mt-2 text-xs text-gray-500">Selected: {selectedCountries.join(', ')}</p>
             </div>
 
+            {/* Rates Section (Only visible if Zone exists) */}
+            {initialData && (
+                <div className="pt-8 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium text-gray-900">Shipping Rates</h3>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                // Simple prompt for now, can be a modal later
+                                const rateName = prompt('Enter Rate Name (e.g. Standard):')
+                                if (!rateName) return
+                                const ratePrice = prompt('Enter Price (e.g. 10):')
+                                if (!ratePrice) return
+
+                                // Optimistic update or direct server call? Direct call is safer.
+                                supabase.from('shipping_rates').insert({
+                                    zone_id: initialData.id,
+                                    name: rateName,
+                                    price: parseFloat(ratePrice),
+                                    min_order_price: 0
+                                }).then(({ error }) => {
+                                    if (error) alert(error.message)
+                                    else router.refresh()
+                                })
+                            }}
+                            className="text-sm font-medium text-rose-600 hover:text-rose-700 flex items-center"
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Rate
+                        </button>
+                    </div>
+
+                    <div className="space-y-3">
+                        {initialData.shipping_rates?.map((rate: any) => (
+                            <div key={rate.id} className="flex items-center justify-between bg-gray-50 p-3 rounded border border-gray-200">
+                                <div>
+                                    <div className="font-medium text-gray-900">{rate.name}</div>
+                                    <div className="text-xs text-gray-500">${rate.price}</div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!confirm('Delete this rate?')) return;
+                                        supabase.from('shipping_rates').delete().eq('id', rate.id).then(() => router.refresh())
+                                    }}
+                                    className="text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
+                            </div>
+                        ))}
+                        {(!initialData.shipping_rates || initialData.shipping_rates.length === 0) && (
+                            <p className="text-sm text-gray-500 italic">No rates added yet.</p>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                 {initialData && (
                     <button
