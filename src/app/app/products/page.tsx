@@ -2,13 +2,23 @@ import { createClient } from '@/lib/supabase/server'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { redirect } from 'next/navigation'
 
 export default async function ProductsPage() {
     const supabase = await createClient()
 
+    // 1. Securely fetch User & Tenant
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login')
+
+    const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
+    if (!profile?.tenant_id) redirect('/onboarding')
+
+    // 2. Fetch Products with STRICT Isolation
     const { data: products } = await supabase
         .from('products')
         .select('*')
+        .eq('tenant_id', profile.tenant_id) // <--- CRITICAL FIX
         .order('created_at', { ascending: false })
 
     return (
@@ -38,14 +48,14 @@ export default async function ProductsPage() {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {products?.length === 0 ? (
+                        {(!products || products.length === 0) ? (
                             <tr>
                                 <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
                                     No products found. Start by adding one.
                                 </td>
                             </tr>
                         ) : (
-                            products?.map((product) => (
+                            products.map((product) => (
                                 <tr key={product.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
