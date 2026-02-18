@@ -27,6 +27,21 @@ export default async function NewProductPage() {
         const price = parseFloat(formData.get('price') as string)
         const stock_quantity = parseInt(formData.get('stock_quantity') as string)
         const image_url = formData.get('image_url') as string
+        const category = formData.get('category') as string
+
+        let images = []
+        try {
+            images = JSON.parse(formData.get('images') as string || '[]')
+        } catch (e) {
+            console.error('Failed to parse images', e)
+        }
+
+        let options = []
+        try {
+            options = JSON.parse(formData.get('options') as string || '[]')
+        } catch (e) {
+            console.error('Failed to parse options', e)
+        }
 
         console.log('Creating product...', { title, price, tenant_id: profile.tenant_id })
 
@@ -49,6 +64,9 @@ export default async function NewProductPage() {
             price,
             stock_quantity,
             image_url,
+            images,
+            category,
+            options,
             is_active: true
         }).select()
 
