@@ -45,7 +45,8 @@ export async function POST(req: Request) {
                 const tenantId = session.metadata?.tenant_id
 
                 // Retrieve shipping details from session if available
-                const shippingDetails = session.shipping_details
+                // Cast to any to avoid TS error if types are outdated
+                const shippingDetails = (session as any).shipping_details
                 const amountTotal = session.amount_total ? session.amount_total / 100 : 0
 
                 console.log(`Processing order completion for Order ID: ${orderId}`)
