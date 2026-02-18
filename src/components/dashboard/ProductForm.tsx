@@ -14,7 +14,7 @@ interface ProductFormProps {
         stock_quantity: number
         is_active: boolean
     }
-    action: (formData: FormData) => Promise<void>
+    action: (formData: FormData) => Promise<any>
 }
 
 export default function ProductForm({ product, action }: ProductFormProps) {
@@ -32,11 +32,15 @@ export default function ProductForm({ product, action }: ProductFormProps) {
         }
 
         try {
-            await action(formData)
-            // Router refresh handled by server action revalidatePath, but we might redirect client side too
+            const result = await action(formData)
+            if (result && !result.success && result.error) {
+                alert(result.error)
+                console.error(result.error)
+            }
+            // If success, the server action redirects, so we don't need to do anything here.
         } catch (error) {
             console.error(error)
-            alert('Failed to save product')
+            alert('An unexpected error occurred. Please try again.')
         } finally {
             setLoading(false)
         }

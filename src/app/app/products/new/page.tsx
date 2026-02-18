@@ -41,7 +41,7 @@ export default async function NewProductPage() {
 
         if (error) {
             console.error('Failed to create product:', error)
-            throw new Error('Failed to create product: ' + error.message)
+            return { success: false, error: 'Database Error: ' + error.message + ' (Code: ' + error.code + ')' }
         }
 
         console.log('Product created successfully:', data)
