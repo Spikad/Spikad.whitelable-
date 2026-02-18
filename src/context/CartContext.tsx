@@ -2,19 +2,21 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 // import { toast } from 'sonner' 
 
 export interface CartItem {
-    id: string
+    cartItemId: string // Unique ID for this specific line item (includes variants)
+    productId: string // Original Product ID
     title: string
     price: number
     image_url: string | null
     quantity: number
     tenant_id: string
+    variants?: Record<string, string> // e.g. { Size: "L", Color: "Red" }
 }
 
 interface CartContextType {
     items: CartItem[]
-    addItem: (item: Omit<CartItem, 'quantity'>) => void
-    removeItem: (id: string) => void
-    updateQuantity: (id: string, quantity: number) => void
+    addItem: (item: Omit<CartItem, 'quantity' | 'cartItemId'> & { variants?: Record<string, string> }) => void
+    removeItem: (cartItemId: string) => void
+    updateQuantity: (cartItemId: string, quantity: number) => void
     clearCart: () => void
     cartTotal: number
     totalItems: number
@@ -35,9 +37,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const savedCart = localStorage.getItem('spikad_cart')
         if (savedCart) {
             try {
-                setItems(JSON.parse(savedCart))
+                const parsed = JSON.parse(savedCart)
+                // Migration: Ensure old items have cartItemId & productId
+                const migrated = parsed.map((item: any) => ({
+                    ...item,
+                    cartItemId: item.cartItemId || item.id,
+                    productId: item.productId || item.id,
+                    variants: item.variants || undefined
+                }))
+                setItems(migrated)
             } catch (e) {
                 console.error('Failed to parse cart', e)
+                // Fallback to empty if corrupt
+                setItems([])
             }
         }
         setIsLoaded(true)
@@ -50,31 +62,46 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [items, isLoaded])
 
-    const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
+    const addItem = (newItem: Omit<CartItem, 'quantity' | 'cartItemId'> & { variants?: Record<string, string> }) => {
+        // Generate a deterministic ID based on Product ID + Variants
+        const variantString = newItem.variants
+            ? Object.entries(newItem.variants).sort().map(([k, v]) => `${k}:${v}`).join('|')
+            : ''
+
+        const generatedCartItemId = `${newItem.productId}-${variantString || 'base'}`
+
         setItems((prev) => {
-            const existing = prev.find((item) => item.id === newItem.id)
-            if (existing) {
-                return prev.map((item) =>
-                    item.id === newItem.id ? { ...item, quantity: item.quantity + 1 } : item
-                )
+            const existingIndex = prev.findIndex((item) => item.cartItemId === generatedCartItemId)
+
+            if (existingIndex > -1) {
+                // Update quantity of existing line item
+                const newItems = [...prev]
+                newItems[existingIndex].quantity += 1
+                return newItems
             }
-            return [...prev, { ...newItem, quantity: 1 }]
+
+            // Add new line item
+            return [...prev, {
+                ...newItem,
+                cartItemId: generatedCartItemId,
+                quantity: 1
+            }]
         })
         setIsCartOpen(true)
         // toast.success('Added to cart')
     }
 
-    const removeItem = (id: string) => {
-        setItems((prev) => prev.filter((item) => item.id !== id))
+    const removeItem = (cartItemId: string) => {
+        setItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId))
     }
 
-    const updateQuantity = (id: string, quantity: number) => {
+    const updateQuantity = (cartItemId: string, quantity: number) => {
         if (quantity < 1) {
-            removeItem(id)
+            removeItem(cartItemId)
             return
         }
         setItems((prev) =>
-            prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+            prev.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity } : item))
         )
     }
 
