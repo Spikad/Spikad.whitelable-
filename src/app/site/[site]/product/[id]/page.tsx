@@ -8,7 +8,7 @@ import VariantSelector, { VariantOption } from '@/components/storefront/VariantS
 import AddToCartButton from '@/components/storefront/AddToCartButton'
 import RelatedProducts from '@/components/storefront/RelatedProducts'
 import CartTrigger from '@/components/storefront/CartTrigger'
-import ProductClientWrapper from './ProductClientWrapper'
+import ProductClientWrapper from '@/components/storefront/ProductClientWrapper'
 
 export default async function ProductPage({
     params,
