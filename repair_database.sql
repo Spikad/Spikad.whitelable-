@@ -22,12 +22,12 @@ ON public.tenants
 FOR UPDATE
 USING (
   auth.uid() IN (
-    SELECT user_id FROM public.profiles WHERE tenant_id = tenants.id
+    SELECT id FROM public.profiles WHERE tenant_id = tenants.id
   )
 )
 WITH CHECK (
   auth.uid() IN (
-    SELECT user_id FROM public.profiles WHERE tenant_id = tenants.id
+    SELECT id FROM public.profiles WHERE tenant_id = tenants.id
   )
 );
 

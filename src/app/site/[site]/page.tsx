@@ -32,14 +32,21 @@ export default async function TenantPage({
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Dynamic Header */}
             <header
                 className="bg-white shadow-sm"
                 style={{ borderTop: `4px solid ${tenant.primary_color}` }}
             >
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                    <Link href="/" className="text-xl font-bold text-gray-900">
-                        {tenant.name}
+                    <Link href="/" className="flex items-center gap-2 text-xl font-bold text-gray-900">
+                        {tenant.logo_url ? (
+                            <img
+                                src={tenant.logo_url}
+                                alt={tenant.name}
+                                className="h-8 w-auto object-contain"
+                            />
+                        ) : (
+                            <span>{tenant.name}</span>
+                        )}
                     </Link>
                     <div className="flex items-center space-x-4">
                         <CartTrigger primaryColor={tenant.primary_color} />
@@ -73,8 +80,18 @@ export default async function TenantPage({
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {products?.map((product) => (
                         <div key={product.id} className="group bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition">
-                            <div className="aspect-square bg-gray-100 relative">
-                                {/* Image would go here */}
+                            <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                                {product.image_url ? (
+                                    <img
+                                        src={product.image_url}
+                                        alt={product.title}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                        <ShoppingBag size={48} />
+                                    </div>
+                                )}
                             </div>
                             <div className="p-4">
                                 <h3 className="font-medium text-gray-900 mb-1">{product.title}</h3>
