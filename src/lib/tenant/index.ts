@@ -43,5 +43,25 @@ export const getTenant = cache(async (domain: string) => {
         return directSlugTenant
     }
 
+    // Fallback 4: Hardcoded Safety Net for spikad.ai
+    // This catches cases where NEXT_PUBLIC_ROOT_DOMAIN is misconfigured
+    if (domain.includes('spikad.ai')) {
+        const parts = domain.split('.')
+        // If domain is "skarpast.spikad.ai", parts[0] is "skarpast"
+        // If domain is "www.skarpast.spikad.ai", parts[0] is "www" (less ideal but handles the main case)
+        if (parts.length >= 2) {
+            const fallbackSlug = parts[0].toLowerCase()
+            console.log('[getTenant] Hardcoded fallback slug:', fallbackSlug)
+
+            const { data: fallbackTenant } = await supabase
+                .from('tenants')
+                .select('*')
+                .eq('slug', fallbackSlug)
+                .single()
+
+            if (fallbackTenant) return fallbackTenant
+        }
+    }
+
     return null
 })
