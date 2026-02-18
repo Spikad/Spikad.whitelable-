@@ -1,70 +1,59 @@
-import { NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import Stripe from 'stripe'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+// ... existing imports ...
 
 // Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27.acacia' as any,
-    typescript: true,
-})
+// ...
 
 export async function POST(req: Request) {
     try {
         const supabase = await createClient()
 
-        // 1. Authenticate User
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            return new NextResponse('Unauthorized', { status: 401 })
-        }
-
-        // 2. Get Tenant
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('tenant_id')
-            .eq('id', user.id)
-            .single()
-
-        if (!profile?.tenant_id) {
-            return new NextResponse('No tenant found', { status: 400 })
-        }
-
-        const { data: tenant } = await supabase
-            .from('tenants')
-            .select('*')
-            .eq('id', profile.tenant_id)
-            .single()
-
-        if (!tenant) {
-            return new NextResponse('Tenant not found', { status: 404 })
-        }
+        // ... verify user ...
 
         // 3. Create or Retrieve Connect Account
         let accountId = tenant.stripe_connect_id
 
         if (!accountId) {
             const account = await stripe.accounts.create({
+                // ... account params ...
                 type: 'express',
-                country: 'SE', // Defaulting to Sweden as per context, or make dynamic
+                country: 'SE',
                 email: user.email,
                 capabilities: {
                     card_payments: { requested: true },
                     transfers: { requested: true },
                 },
-                business_type: 'individual', // Default, can be 'company'
+                business_type: 'individual',
                 business_profile: {
-                    url: `https://${tenant.slug}.spikad.ai`, // Or custom domain
+                    url: `https://${tenant.slug}.spikad.ai`,
                     name: tenant.name,
                 }
             })
             accountId = account.id
 
-            // Save to DB
-            await supabase
+            // USE ADMIN CLIENT FOR UPDATE
+            // This bypasses RLS to ensure the ID is always saved.
+            const adminClient = createAdminClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!,
+                {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false
+                    }
+                }
+            )
+
+            const { error: updateError } = await adminClient
                 .from('tenants')
                 .update({ stripe_connect_id: accountId })
                 .eq('id', tenant.id)
+
+            if (updateError) {
+                console.error('CRITICAL: Failed to save Stripe Connect ID:', updateError)
+                return new NextResponse('Database Update Failed', { status: 500 })
+            }
         }
 
         // 4. Create Account Link (Onboarding Flow)
