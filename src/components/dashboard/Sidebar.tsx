@@ -12,7 +12,7 @@ const navItems = [
     { name: 'Settings', href: '/app/settings', icon: Settings },
 ]
 
-export default function Sidebar({ tenantSlug }: { tenantSlug?: string }) {
+export default function Sidebar({ tenantSlug, userRole }: { tenantSlug?: string, userRole?: string }) {
     const pathname = usePathname()
 
     return (
@@ -44,7 +44,6 @@ export default function Sidebar({ tenantSlug }: { tenantSlug?: string }) {
                             </Link>
                         )
                     })}
-                    {/* View Shop Link */}
                     {tenantSlug && (
                         <a
                             href={`https://${tenantSlug}.spikad.ai`}
@@ -55,6 +54,17 @@ export default function Sidebar({ tenantSlug }: { tenantSlug?: string }) {
                             <Store className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400" />
                             View Shop
                         </a>
+                    )}
+
+                    {/* SUPER ADMIN LINK */}
+                    {userRole === 'super_admin' && (
+                        <Link
+                            href="/admin"
+                            className="flex items-center rounded-lg px-2 py-2 text-sm font-medium text-purple-600 hover:bg-purple-50 hover:text-purple-900 transition-colors mt-2"
+                        >
+                            <span className="mr-3 flex h-5 w-5 items-center justify-center font-bold">👑</span>
+                            Wait, I'm Super Admin
+                        </Link>
                     )}
                 </nav>
             </div>
