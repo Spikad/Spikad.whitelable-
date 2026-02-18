@@ -75,7 +75,7 @@ export default async function ProductPage({
                         )}
                     </Link>
                     <div className="flex items-center space-x-4">
-                        <CartTrigger primaryColor={tenant.primary_color} />
+                        <CartTrigger primaryColor={tenant.primary_color} tenantId={tenant.id} />
                     </div>
                 </div>
             </header>
