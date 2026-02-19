@@ -28,6 +28,7 @@ export default async function NewProductPage() {
         const stock_quantity = parseInt(formData.get('stock_quantity') as string)
         const image_url = formData.get('image_url') as string
         const category = formData.get('category') as string
+        const product_type = formData.get('product_type') as string || 'physical'
 
         let images = []
         try {
@@ -43,7 +44,7 @@ export default async function NewProductPage() {
             console.error('Failed to parse options', e)
         }
 
-        console.log('Creating product...', { title, price, tenant_id: profile.tenant_id })
+        console.log('Creating product...', { title, price, tenant_id: profile.tenant_id, product_type })
 
         // Use Admin Client to bypass RLS for now (Hotfix)
         const adminClient = createAdminClient(
@@ -67,6 +68,7 @@ export default async function NewProductPage() {
             images,
             category,
             options,
+            product_type, // New Field
             is_active: true
         }).select()
 
@@ -74,6 +76,25 @@ export default async function NewProductPage() {
             console.error('Failed to create product:', error)
             return { success: false, error: 'Database Error: ' + error.message + ' (Code: ' + error.code + ')' }
         }
+
+        // SERVICE LOGIC: If service, add settings
+        if (product_type === 'service' && data && data[0]) {
+            const duration = parseInt(formData.get('duration_minutes') as string) || 60
+            const buffer = parseInt(formData.get('buffer_time_minutes') as string) || 0
+
+            const { error: serviceError } = await adminClient.from('service_settings').insert({
+                product_id: data[0].id,
+                duration_minutes: duration,
+                buffer_time_minutes: buffer
+            })
+
+            if (serviceError) {
+                console.error('Failed to create service settings:', serviceError)
+                // We don't fail the whole request, but we log it
+            }
+        }
+
+
 
         console.log('Product created successfully:', data)
 

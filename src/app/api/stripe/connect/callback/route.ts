@@ -4,10 +4,8 @@ import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27.acacia' as any,
-    typescript: true,
-})
+import { stripe } from '@/lib/stripe'
+
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)

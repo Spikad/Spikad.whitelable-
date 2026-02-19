@@ -4,10 +4,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 
 // Force cast validity to avoid lint errors with mismatching local types
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-01-27.acacia' as any,
-    typescript: true,
-})
+import { stripe } from '@/lib/stripe'
+
 
 export async function POST(req: Request) {
     try {

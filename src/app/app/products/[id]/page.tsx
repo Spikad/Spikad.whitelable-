@@ -14,10 +14,10 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     const { data: profile } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).single()
     if (!profile?.tenant_id) redirect('/onboarding')
 
-    // Fetch Product ensuring it belongs to tenant
+    // Fetch Product with Service Settings
     const { data: product } = await supabase
         .from('products')
-        .select('*')
+        .select('*, service_settings(*)')
         .eq('id', id)
         .eq('tenant_id', profile.tenant_id)
         .single()
@@ -34,20 +34,14 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
         const stock_quantity = parseInt(formData.get('stock_quantity') as string)
         const image_url = formData.get('image_url') as string
         const category = formData.get('category') as string
+        const product_type = formData.get('product_type') as string || 'physical'
 
+        // Safely parse JSON arrays
         let images = []
-        try {
-            images = JSON.parse(formData.get('images') as string || '[]')
-        } catch (e) {
-            console.error('Failed to parse images', e)
-        }
+        try { images = JSON.parse(formData.get('images') as string || '[]') } catch (e) { }
 
         let options = []
-        try {
-            options = JSON.parse(formData.get('options') as string || '[]')
-        } catch (e) {
-            console.error('Failed to parse options', e)
-        }
+        try { options = JSON.parse(formData.get('options') as string || '[]') } catch (e) { }
 
         if (!profile?.tenant_id) {
             throw new Error('Unauthorized')
@@ -63,13 +57,27 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
                 image_url,
                 images,
                 category,
-                options
+                options,
+                product_type
             })
             .eq('id', id)
-            .eq('tenant_id', profile.tenant_id) // Extra safety
+            .eq('tenant_id', profile.tenant_id)
 
-        if (error) {
-            throw new Error('Failed to update product')
+        if (error) throw new Error('Failed to update product')
+
+        // SERVICE LOGIC: Upsert settings
+        if (product_type === 'service') {
+            const duration = parseInt(formData.get('duration_minutes') as string) || 60
+            const buffer = parseInt(formData.get('buffer_time_minutes') as string) || 0
+
+            // We use upsert because the row might not exist yet if converted from physical
+            const { error: serviceError } = await supabase.from('service_settings').upsert({
+                product_id: id,
+                duration_minutes: duration,
+                buffer_time_minutes: buffer
+            }, { onConflict: 'product_id' })
+
+            if (serviceError) console.error('Failed to update service settings', serviceError)
         }
 
         revalidatePath('/app/products')
