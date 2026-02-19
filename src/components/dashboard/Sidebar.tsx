@@ -2,13 +2,16 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Truck, Settings, LogOut, Store } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Truck, Settings, LogOut, Store, LineChart, FileText, Newspaper, Users } from 'lucide-react'
 import clsx from 'clsx'
 
 const navItems = [
-    { name: 'Overview', href: '/app', icon: LayoutDashboard },
+    { name: 'Analytics', href: '/app/analytics', icon: LineChart },
     { name: 'Products', href: '/app/products', icon: ShoppingBag },
     { name: 'Orders', href: '/app/orders', icon: Truck },
+    { name: 'Pages', href: '/app/pages', icon: FileText },
+    { name: 'Blog', href: '/app/blog', icon: Newspaper },
+    { name: 'Affiliates', href: '/app/affiliates', icon: Users },
     { name: 'Settings', href: '/app/settings', icon: Settings },
 ]
 
